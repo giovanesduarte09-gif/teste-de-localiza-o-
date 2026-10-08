@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Teste de câmera e localização</title>
+<style>
+body{font-family:Arial,sans-serif;max-width:650px;margin:0 auto;padding:24px;line-height:1.5}
+.card{border:1px solid #ddd;border-radius:14px;padding:20px;margin:18px 0}
+button{padding:12px 16px;border:0;border-radius:9px;margin:6px 4px 6px 0;cursor:pointer}
+video,img{width:100%;max-width:500px;border-radius:12px;background:#111;margin-top:10px}
+.notice{background:#f3f3f3;padding:12px;border-radius:10px}
+#status{white-space:pre-wrap}
+</style>
+</head>
+<body>
+<h1>Teste de permissões</h1>
+<div class="notice">
+<strong>Antes de continuar:</strong> esta página solicita acesso à câmera e à localização somente quando você clicar nos botões abaixo.
+A foto e a localização são exibidas nesta página e <strong>não são enviadas para um servidor</strong>.
+</div>
+
+<div class="card">
+<h2>📷 Câmera</h2>
+<p>Ao permitir, a câmera será exibida aqui. Você decide se quer tirar uma foto.</p>
+<button id="cameraBtn">Permitir câmera</button>
+<button id="photoBtn" disabled>Tirar foto</button>
+<video id="video" autoplay playsinline muted></video>
+<div id="photo"></div>
+<p id="cameraStatus"></p>
+</div>
+
+<div class="card">
+<h2>📍 Localização</h2>
+<p>Ao permitir, o navegador fornecerá a localização que estiver disponível para esta página.</p>
+<button id="locationBtn">Permitir localização</button>
+<p id="locationStatus"></p>
+</div>
+
+<script>
+let stream;
+
+document.getElementById('cameraBtn').onclick = async () => {
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({video:true});
+    document.getElementById('video').srcObject = stream;
+    document.getElementById('photoBtn').disabled = false;
+    document.getElementById('cameraStatus').textContent =
+      'Câmera autorizada.';
+  } catch(e) {
+    document.getElementById('cameraStatus').textContent =
+      'Câmera não autorizada ou indisponível.';
+  }
+};
+
+document.getElementById('photoBtn').onclick = () => {
+  if (!stream) return;
+  const video = document.getElementById('video');
+  const canvas = document.createElement('canvas');
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+  canvas.getContext('2d').drawImage(video,0,0);
+  const img = document.createElement('img');
+  img.src = canvas.toDataURL('image/jpeg');
+  img.alt = 'Foto capturada';
+  document.getElementById('photo').replaceChildren(img);
+  document.getElementById('cameraStatus').textContent =
+    'Foto capturada e exibida nesta página. Nada foi enviado.';
+};
+
+document.getElementById('locationBtn').onclick = () => {
+  if (!navigator.geolocation) {
+    document.getElementById('locationStatus').textContent =
+      'Este navegador não oferece geolocalização.';
+    return;
+  }
+  document.getElementById('locationStatus').textContent = 'Solicitando permissão...';
+  navigator.geolocation.getCurrentPosition(
+    p => {
+      document.getElementById('locationStatus').textContent =
+        'Localização autorizada:\\nLatitude: ' + p.coords.latitude.toFixed(6) +
+        '\\nLongitude: ' + p.coords.longitude.toFixed(6) +
+        '\\nPrecisão aproximada: ' + Math.round(p.coords.accuracy) + ' m';
+    },
+    () => {
+      document.getElementById('locationStatus').textContent =
+        'Localização não autorizada ou indisponível.';
+    },
+    {enableHighAccuracy:true, timeout:10000, maximumAge:0}
+  );
+};
+</script>
+</body>
+</html>
